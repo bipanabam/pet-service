@@ -1,0 +1,13 @@
+[project]
+name = "pet-service"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi[standard]>=0.133.0",
+    "psycopg[binary]>=3.3.3",
+    "python-dotenv>=1.2.1",
+    "sqlmodel>=0.0.37",
+    "uvicorn[standard]>=0.41.0",
+]
