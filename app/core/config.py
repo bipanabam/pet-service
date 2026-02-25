@@ -6,6 +6,7 @@ load_dotenv()
 
 class Config(BaseSettings):
     APP_NAME: str = "Digital Pet World"
+    API_PREFIX: str = "/api/v1"
     DEBUG: bool = False
     DB_USER: str = "user"
     DB_PASSWORD: str = "password"
@@ -13,6 +14,12 @@ class Config(BaseSettings):
     DB_PORT: int = 5432
     DB_NAME: str = "myapp_db"
     DATABASE_URL: str
+    
+    APPWRITE_ENDPOINT: str
+    APPWRITE_PROJECT_ID: str
+    APPWRITE_API_KEY: str
+    APPWRITE_DATABASE_ID: str
+    APPWRITE_PAIR_COLLECTION_ID: str
     
     @property
     def database_url(self) -> str:

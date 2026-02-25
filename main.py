@@ -6,6 +6,8 @@ from app.db.session import init_db
 from app.core.logging import setup_logging
 from app.core.config import config
 
+from app.api.v1.couple import router as couple_router
+
 setup_logging()
 
 app = FastAPI(
@@ -19,13 +21,17 @@ app = FastAPI(
 def on_startup():
     init_db()
 
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+ 
+app.include_router(
+    prefix=config.API_PREFIX,
+    router=couple_router
 )
 
 @app.get("/healthz")

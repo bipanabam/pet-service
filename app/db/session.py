@@ -1,6 +1,6 @@
-import sqlmodel
 from sqlalchemy import create_engine
-from sqlmodel import SQLModel, Session
+from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.ext.declarative import declarative_base
 
 from app.core.config import config
 
@@ -11,10 +11,14 @@ if SQLALCHEMY_DATABASE_URL == "":
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False} if "sqlite" in SQLALCHEMY_DATABASE_URL else {})
 
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+Base = declarative_base()
+
 def init_db():
     print("Creating database")
-    SQLModel.metadata.create_all(engine)
+    Base.metadata.create_all(bind=engine)
     
 def get_session():
-    with Session(engine) as session:
+    with SessionLocal() as session:
         yield session
