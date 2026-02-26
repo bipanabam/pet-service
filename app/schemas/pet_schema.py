@@ -6,6 +6,10 @@ class PetBase(BaseModel):
     pet_type: str
     is_active: bool = True
     
+class PetList(BaseModel):
+    results: list[PetBase]
+    count: int
+
 class PetCreate(PetBase):
     name: str
     pet_type: str

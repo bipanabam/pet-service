@@ -1,7 +1,9 @@
 from pydantic import BaseModel, Field
+import uuid
 
 class CoupleBase(BaseModel):
-    id: str = Field(..., description="ID of the couple")
+    id: uuid.UUID = Field(..., description="ID of the couple")
+    pair_id: str = Field(..., description="ID of the couple from Appwrite")
     partnerOne_id: str = Field(..., description="ID of the first partner")
     partnerTwo_id: str = Field(..., description="ID of the second partner")
     

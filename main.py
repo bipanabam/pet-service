@@ -7,6 +7,7 @@ from app.core.logging import setup_logging
 from app.core.config import config
 
 from app.api.v1.couple import router as couple_router
+from app.api.v1.pets import router as pets_router
 
 setup_logging()
 
@@ -32,6 +33,10 @@ app.add_middleware(
 app.include_router(
     prefix=config.API_PREFIX,
     router=couple_router
+)
+app.include_router(
+    prefix=config.API_PREFIX,
+    router=pets_router
 )
 
 @app.get("/healthz")

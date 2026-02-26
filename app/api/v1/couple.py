@@ -1,10 +1,12 @@
 from fastapi import APIRouter, HTTPException, Depends, Response
-from sqlmodel import Session
+from sqlalchemy.orm import Session
+from sqlalchemy import select
 
 from app.models.couple import Couple
 from app.schemas.couple_schema import CoupleSync, CoupleBase
 from app.db.session import get_session
-from app.services.appwrite_service import get_pair
+from app.services.appwrite_service import get_active_pair, get_user_document
+from app.auth.dependencies import get_current_user
 
 router = APIRouter(
     prefix="/couple",
@@ -12,41 +14,49 @@ router = APIRouter(
 )
 
 @router.post("/sync", response_model=CoupleBase)
-def sync_couple(payload: CoupleSync, session: Session = Depends(get_session)):
-    pair_id = payload.pair_id
+def sync_couple(
+    user=Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    user_doc = get_user_document(user["$id"])
+    pair_id = user_doc.get("pairId")
+
     if not pair_id:
-        raise HTTPException(status_code=400, detail="pair_id is required")
-    
-    data = session.query(Couple).filter(Couple.id == payload.pair_id).first()
-    if data:
-        return Response(status_code=204, content="Already synced with Appwrite")  # No content, already exists
-    
-    # check if given pair id exists in appwrite, 
-    pair_doc = get_pair(payload.pair_id)
+        raise HTTPException(403, "User not paired yet. Please pair first in the app.")
+
+    couple = session.execute(
+        select(Couple)
+        .where(Couple.pair_id == pair_id)
+    ).first()
+
+    if couple:
+        return {
+            "id": couple[0].id,
+            "pair_id": couple[0].pair_id,
+            "partnerOne_id": couple[0].partnerOne_id,
+            "partnerTwo_id": couple[0].partnerTwo_id,
+        }
+
+    pair_doc = get_active_pair(pair_id)
+
     if not pair_doc:
-        raise HTTPException(status_code=404, detail="Pair not found in Appwrite")
-    
-    try:
-        new_couple = Couple(
-            id=pair_doc["$id"],
-            partnerOne_id=pair_doc["partnerOne"],
-            partnerTwo_id=pair_doc["partnerTwo"]
-        )
-    except KeyError as e:
-        raise HTTPException(status_code=400, detail=f"Missing key in Appwrite response: {e}")
+        raise HTTPException(404, "Pair not active")
+
+    new_couple = Couple(
+        pair_id=pair_doc["$id"],
+        partnerOne_id=pair_doc["partnerOne"],
+        partnerTwo_id=pair_doc["partnerTwo"],
+    )
+
     session.add(new_couple)
     session.commit()
     session.refresh(new_couple)
+
     return new_couple
 
-@router.get("/{couple_id}", response_model=CoupleBase)
-def get_couple(couple_id: str, session: Session = Depends(get_session)):
-    couple = session.query(Couple).filter(Couple.id == couple_id).first()
+@router.get("/{pair_id}", response_model=CoupleBase)
+def get_couple(pair_id: str, session: Session = Depends(get_session)):
+    couple = session.query(Couple).filter(Couple.pair_id == pair_id).first()
     if not couple:
-        # check if given pair id exists in appwrite
-        pair_doc = get_pair(couple_id)
-        if not pair_doc:
-            raise HTTPException(status_code=404, detail="Couple Id Invalid.")
-        # If pair exists in Appwrite but not in local DB, return error
         raise HTTPException(status_code=404, detail="Couple data not found in local database. Please sync first.")
     return couple
