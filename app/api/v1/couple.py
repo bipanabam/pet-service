@@ -38,3 +38,15 @@ def sync_couple(payload: CoupleSync, session: Session = Depends(get_session)):
     session.commit()
     session.refresh(new_couple)
     return new_couple
+
+@router.get("/{couple_id}", response_model=CoupleBase)
+def get_couple(couple_id: str, session: Session = Depends(get_session)):
+    couple = session.query(Couple).filter(Couple.id == couple_id).first()
+    if not couple:
+        # check if given pair id exists in appwrite
+        pair_doc = get_pair(couple_id)
+        if not pair_doc:
+            raise HTTPException(status_code=404, detail="Couple Id Invalid.")
+        # If pair exists in Appwrite but not in local DB, return error
+        raise HTTPException(status_code=404, detail="Couple data not found in local database. Please sync first.")
+    return couple
