@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select
 
 from app.models.couple import Couple
-from app.schemas.couple_schema import CoupleSync, CoupleBase
+from app.schemas.couple_schema import CoupleBase
 from app.db.session import get_session
 from app.services.appwrite_service import get_active_pair, get_user_document
 from app.auth.dependencies import get_current_user
@@ -30,15 +30,14 @@ def sync_couple(
     ).first()
 
     if couple:
-        return {
-            "id": couple[0].id,
-            "pair_id": couple[0].pair_id,
-            "partnerOne_id": couple[0].partnerOne_id,
-            "partnerTwo_id": couple[0].partnerTwo_id,
-        }
+        return CoupleBase(
+            id=couple[0].id,
+            pair_id=couple[0].pair_id,
+            partnerOne_id=couple[0].partnerOne_id,
+            partnerTwo_id=couple[0].partnerTwo_id,
+        )
 
     pair_doc = get_active_pair(pair_id)
-
     if not pair_doc:
         raise HTTPException(404, "Pair not active")
 

@@ -1,23 +1,36 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
+from app.models.pet import PetTypeEnum
+from uuid import UUID
 
 class PetBase(BaseModel):
-    id: str
     name: str
-    pet_type: str
-    is_active: bool = True
+    pet_type: PetTypeEnum
     
-class PetList(BaseModel):
-    results: list[PetBase]
-    count: int
+    model_config = {
+        "use_enum_values": True,
+        "from_attributes": True
+    }
+    
+class PetStateBase(BaseModel):
+    stage: str
+    xp: int
+    health: int
+    
+    model_config = {
+        "use_enum_values": True,
+        "from_attributes": True
+    }
 
 class PetCreate(PetBase):
-    name: str
-    pet_type: str
-    
+    pass
 class PetCreateResponse(PetBase):
-    id: str
-    name: str
-    pet_type: str
-    initial_stage: str
-    health: int
-    xp: int
+    id: UUID
+    state: PetStateBase
+    
+    model_config = ConfigDict(from_attributes=True)
+    
+class PetList(BaseModel):
+    results: list[PetCreateResponse]
+    count: int
+    
+    model_config = ConfigDict(from_attributes=True)
