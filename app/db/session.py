@@ -20,5 +20,12 @@ def init_db():
     Base.metadata.create_all(bind=engine)
     
 def get_session():
-    with SessionLocal() as session:
+    session = SessionLocal()
+    try:
         yield session
+        session.commit()
+    except:
+        session.rollback()
+        raise
+    finally:
+        session.close()

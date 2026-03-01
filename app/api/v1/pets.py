@@ -5,9 +5,10 @@ from sqlalchemy import select
 from app.models.pet import Pet
 from app.models.pet_state import PetState
 from app.models.couple import Couple
-from app.schemas.pet_schema import PetList, PetCreate, PetCreateResponse, PetStateBase, PetStateResponse
+from app.schemas.pet import PetList, PetCreate, PetCreateResponse, PetStateBase, PetStateResponse
 from app.db.session import get_session
 from app.dependencies.couple import get_current_couple
+from app.services.pet_service import PetService
 
 import uuid
 
@@ -44,45 +45,15 @@ def get_pets(
 def create_pet(
     payload: PetCreate,
     couple: Couple = Depends(get_current_couple),
-    session: Session = Depends(get_session),
+    db: Session = Depends(get_session),
 ):
-    if not couple:
-        raise HTTPException(status_code=403, detail="User not part of a couple")
-    
-    no_of_pets = session.execute(
-        select(Pet).where(Pet.couple_id == couple.id)).scalars().count()
-    
-    if no_of_pets >= 3:
-        raise HTTPException(status_code=400, detail="Maximum number of pets reached")
-    
+    service = PetService(db)
     try:
-        new_pet = Pet(
-            name=payload.name,
-            pet_type=payload.pet_type,
-            couple_id=couple.id,
-        )
-        session.add(new_pet)
-        session.flush()  # assigns ID without committing
-
-        pet_state = PetState(
-            pet_id=new_pet.id,
-            stage="egg",
-            xp=0,
-            growth_level=1,
-            health=100,
-            happiness=100,
-            energy=100,
-            version=1,
-        )
-        session.add(pet_state)
-        session.commit()
-        session.refresh(new_pet)
-        session.refresh(pet_state)   
-        
-        return new_pet
-    except Exception as e:
-        session.rollback()
-        raise HTTPException(status_code=500, detail=f"Failed to create pet: {str(e)}")
+        new_pet = service.create_pet(couple.id, payload)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    return new_pet
+    
     
 # GET /pets/{pet_id}/state - Get pet state
 @router.get("/{pet_id}/state", response_model=PetStateResponse)
@@ -92,9 +63,6 @@ def get_pet_state(
     session: Session = Depends(get_session),
 ):
     """Returns the current state of the pet."""
-    if not couple:
-        raise HTTPException(status_code=403, detail="User not part of a couple")
-
     pet_state = session.execute(
         select(PetState)
         .where(PetState.pet_id == uuid.UUID(pet_id))
@@ -117,3 +85,4 @@ def get_pet_state(
         last_interaction_at=pet_state.last_interaction_at,
         updated_at=pet_state.updated_at
     )
+ 
