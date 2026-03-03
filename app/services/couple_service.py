@@ -4,40 +4,44 @@ from app.services.appwrite_service import get_active_pair
 
 from fastapi import HTTPException
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 class CoupleService:
     @staticmethod
-    def get_couple_by_pair_id(pair_id: str, session):
-        couple = session.query(Couple).filter(Couple.pair_id == pair_id).first()
+    async def get_couple_by_pair_id(pair_id: str, session: AsyncSession):
+        result = await session.execute(
+            select(Couple).where(Couple.pair_id == pair_id)
+        )
+        couple = result.scalars().first()
+
         if not couple:
-            raise HTTPException(status_code=404, detail="Couple not found. Please sync first.")
+            raise HTTPException(404, "Couple not found.")
+
         return couple
     
     @staticmethod
-    def get_or_create_couple(pair_id: str, session):
-        couple = session.execute(
-            select(Couple)
-            .where(Couple.pair_id == pair_id)
-        ).scalars().first()
-        
+    async def get_or_create_couple(pair_id: str, session: AsyncSession):
+
+        result = await session.execute(
+            select(Couple).where(Couple.pair_id == pair_id)
+        )
+        couple = result.scalars().first()
+
         if couple:
-            return CoupleBase(
-                id=couple.id,
-                pair_id=couple.pair_id,
-                partnerOne_id=couple.partnerOne_id,
-                partnerTwo_id=couple.partnerTwo_id
-            )
-        
+            return couple
+
         pair_doc = get_active_pair(pair_id)
         if not pair_doc:
-            raise HTTPException(status_code=404, detail="Couple Id Invalid.")
-        
+            raise HTTPException(404, "Couple Id Invalid.")
+
         new_couple = Couple(
             pair_id=pair_doc["$id"],
             partnerOne_id=pair_doc["partnerOne"],
             partnerTwo_id=pair_doc["partnerTwo"]
         )
+
         session.add(new_couple)
-        session.commit()
-        session.refresh(new_couple)
+        await session.commit()
+        await session.refresh(new_couple)
+
         return new_couple

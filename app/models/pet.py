@@ -1,12 +1,3 @@
-
-# # {
-# #   "pet_id": "uuid",
-# #   "name": "Lumi",
-# #   "pet_type": "spirit",
-# #   "initial_stage": "egg",
-# #   "health": 100,
-# #   "xp": 0
-# # }
 from sqlalchemy import Enum, String, Boolean, ForeignKey, DateTime, Index, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship, Mapped, mapped_column
