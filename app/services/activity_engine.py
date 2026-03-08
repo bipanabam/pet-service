@@ -1,3 +1,4 @@
+from app.models.pet_state import PetStageEnum
 class ActivityEngine:
 
     ACTIVITY_MATRIX = {
@@ -8,12 +9,36 @@ class ActivityEngine:
         # "daily_prayer": {"xp": 50, "health": 3, "happines": 5, "energy":0},
         # "cuddle_time":  {"xp": 10, "health": 0, "happines": 12, "energy":-3},
     }
+    
+    EVOLUTION_XP = {
+        PetStageEnum.EGG: 50,
+        PetStageEnum.BABY: 300,
+        PetStageEnum.TEEN: 1000,
+    }
+
+    NEXT_STAGE = {
+        PetStageEnum.EGG: PetStageEnum.BABY,
+        PetStageEnum.BABY: PetStageEnum.TEEN,
+        PetStageEnum.TEEN: PetStageEnum.ADULT,
+    }
+
 
     def __init__(self, state):
         self.state = state
+        
+    def _handle_evolution(self):
+        current_stage = self.state.stage
+        threshold = self.EVOLUTION_XP.get(current_stage)
+
+        if threshold and self.state.xp >= threshold:
+            self.state.stage = self.NEXT_STAGE[current_stage]
+            self.state.growth_level += 1
+            
+    def _handle_growth(self):
+        if self.state.xp > self.state.growth_level * 200:
+            self.state.growth_level += 1
 
     def apply(self, activity_type: str):
-
         config = self.ACTIVITY_MATRIX.get(activity_type)
         if not config:
             raise ValueError("Invalid activity")
@@ -24,14 +49,12 @@ class ActivityEngine:
         self.state.energy = max(0, self.state.energy + config["energy"])
 
         self._handle_growth()
+        self._handle_evolution()
 
         return {
             "xp_gained": config["xp"],
             "new_growth_level": self.state.growth_level,
+            "stage": self.state.stage,
             "new_health": self.state.health,
             "mood": self.state.mood,
         }
-
-    def _handle_growth(self):
-        if self.state.xp > self.state.growth_level * 200:
-            self.state.growth_level += 1

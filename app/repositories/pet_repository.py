@@ -2,6 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, UUID
 from sqlalchemy.orm import selectinload
 from app.models.pet import Pet
+from app.models.pet_state import PetState
 
 class PetRepository:
 
@@ -41,7 +42,7 @@ class PetRepository:
         result = await self.db.execute(
             select(Pet)
             .where(Pet.id == pet_id, Pet.couple_id == couple_id)
-            .options(selectinload(Pet.state))
+            .options(selectinload(Pet.state), selectinload(Pet.state, PetState.pet))
         )
         return result.scalar_one_or_none()
 

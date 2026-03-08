@@ -29,6 +29,3 @@ class PetEvent(Base):
         server_default=func.now()
     )
     
-    __table_args__ = (
-        Index("ix_unique_activity", "pet_id", "activity_id", unique=True),
-    )
