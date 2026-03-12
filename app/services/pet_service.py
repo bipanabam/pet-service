@@ -29,8 +29,10 @@ class PetService:
             state.stage = PetStageEnum.BABY
             state.growth_level = 1
             state.updated_at = datetime.utcnow()
-            # state.version += 1
+
             await self.db.flush()
+            await self.db.refresh(state)
+
             return True
 
         return False
@@ -66,7 +68,7 @@ class PetService:
 
         state = PetState(
             pet_id=pet.id,
-            stage="egg",
+            stage=PetStageEnum.EGG,
             xp=0,
             health=100,
             growth_level=1,
@@ -157,11 +159,11 @@ class PetService:
             engine = ActivityEngine(state)
             result_data = engine.apply(activity_type)
 
-            activity.xp_awarded = result_data["xp"]
+            activity.xp_awarded = result_data["xp_gained"]
             
             return {
                 "status": "completed_together",
-                "xp_awarded": result_data["xp"]
+                "result" : result_data
             }
 
         return {"status": "partner_completed"}
