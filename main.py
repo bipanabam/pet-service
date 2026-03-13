@@ -8,6 +8,7 @@ from app.core.config import config
 
 from app.api.v1.couple import router as couple_router
 from app.api.v1.pets import router as pets_router
+from app.api.v1.cosmetics import router as cosmetics_router
 
 setup_logging()
 
@@ -37,6 +38,10 @@ app.include_router(
 app.include_router(
     prefix=config.API_PREFIX,
     router=pets_router
+)
+app.include_router(
+    prefix=config.API_PREFIX,
+    router=cosmetics_router
 )
 
 @app.get("/healthz")

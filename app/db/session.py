@@ -16,7 +16,7 @@ engine = create_async_engine(
     pool_pre_ping=True,
 )
 
-AsyncSessionLocal = async_sessionmaker(
+async_session_factory = async_sessionmaker(
     bind=engine,
     expire_on_commit=False,
 )
@@ -28,7 +28,7 @@ async def init_db():
         await conn.run_sync(Base.metadata.create_all)
         
 async def get_async_session():
-    async with AsyncSessionLocal() as session:
+    async with async_session_factory() as session:
         try:
             yield session
             await session.commit()

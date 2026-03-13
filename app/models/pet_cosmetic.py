@@ -13,6 +13,11 @@ class CosmeticTypeEnum(str, enum.Enum):
     HAT = "hat"
     BACKGROUND = "background"
 
+class CosmeticRarityEnum(str, enum.Enum):
+    COMMON = "common"
+    RARE = "rare"
+    EPIC = "epic"
+    LEGENDARY = "legendary"
 
 class PetCosmetic(Base):
     __tablename__ = "pet_cosmetic"
@@ -35,7 +40,10 @@ class PetCosmetic(Base):
 
     asset_key: Mapped[str] = mapped_column(String(100))  # sprite reference
 
-    rarity: Mapped[str] = mapped_column(String(20), default="common")
+    rarity: Mapped[CosmeticRarityEnum] = mapped_column(
+        Enum(CosmeticRarityEnum, name="cosmetic_rarity_enum"),
+        default=CosmeticRarityEnum.COMMON
+    )
     
     unlocks: Mapped[list["PetCosmeticUnlock"]] = relationship(
         "PetCosmeticUnlock",
