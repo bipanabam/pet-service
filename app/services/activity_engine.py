@@ -1,4 +1,8 @@
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.models.pet_state import PetStageEnum
+from app.services.cosmetic_service import CosmeticService
+
 class ActivityEngine:
 
     ACTIVITY_MATRIX = {
@@ -23,8 +27,10 @@ class ActivityEngine:
     }
 
 
-    def __init__(self, state):
+    def __init__(self, state, db: AsyncSession):
         self.state = state
+        self.db = db
+        self.cosmetic_service = CosmeticService(db)
         
     def _handle_evolution(self):
         current_stage = self.state.stage
@@ -33,12 +39,14 @@ class ActivityEngine:
         if threshold and self.state.xp >= threshold:
             self.state.stage = self.NEXT_STAGE[current_stage]
             self.state.growth_level += 1
+            return True
+        return False
             
     def _handle_growth(self):
         if self.state.xp > self.state.growth_level * 200:
             self.state.growth_level += 1
-
-    def apply(self, activity_type: str):
+            
+    async def apply(self, activity_type: str):
         config = self.ACTIVITY_MATRIX.get(activity_type)
         if not config:
             raise ValueError("Invalid activity")
@@ -48,8 +56,12 @@ class ActivityEngine:
         self.state.happiness = min(100, self.state.happiness + config["happiness"])
         self.state.energy = max(0, self.state.energy + config["energy"])
 
+        evolved = self._handle_evolution()
         self._handle_growth()
-        self._handle_evolution()
+        
+        # unlock cosmetics automatically after evolution
+        if evolved:
+            await self.cosmetic_service.unlock_stage_rewards(self.state.pet)
 
         return {
             "xp_gained": config["xp"],
